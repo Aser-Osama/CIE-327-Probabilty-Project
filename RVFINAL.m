@@ -1,10 +1,11 @@
-classdef app1_exported < matlab.apps.AppBase
+classdef RVFINAL < matlab.apps.AppBase
 
     % Properties that correspond to app components
     properties (Access = public)
         UIFigure                        matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
         RandomVariableTab               matlab.ui.container.Tab
+        Button                          matlab.ui.control.Button
         MGFtimeupperlimitLabel          matlab.ui.control.Label
         timelim                         matlab.ui.control.NumericEditField
         ExpParam2Label_2                matlab.ui.control.Label
@@ -670,6 +671,10 @@ classdef app1_exported < matlab.apps.AppBase
             app.MGFtimeupperlimitLabel.Position = [645 179 135 22];
             app.MGFtimeupperlimitLabel.Text = 'MGF time upper limit';
 
+            % Create Button
+            app.Button = uibutton(app.RandomVariableTab, 'push');
+            app.Button.Position = [532 178 100 23];
+
             % Create RandomProcessTab_2
             app.RandomProcessTab_2 = uitab(app.TabGroup);
             app.RandomProcessTab_2.Title = 'Random Process';
@@ -815,7 +820,7 @@ classdef app1_exported < matlab.apps.AppBase
     methods (Access = public)
 
         % Construct app
-        function app = app1_exported
+        function app = RVFINAL
 
             % Create UIFigure and components
             createComponents(app)
