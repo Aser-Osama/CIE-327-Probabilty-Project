@@ -730,14 +730,14 @@ classdef app1_exported < matlab.apps.AppBase
             xlabel(app.ensembleGraph, 'X')
             ylabel(app.ensembleGraph, 'Y')
             zlabel(app.ensembleGraph, 'Z')
-            app.ensembleGraph.Position = [47 616 814 296];
+            app.ensembleGraph.Position = [47 616-100 814 296];
 
             % Create autoGraph
             app.autoGraph = uiaxes(app.RandomProcessTab_2);
             title(app.autoGraph, 'auto-correlation function')
             xlabel(app.autoGraph, 'Time Delay (s)')
             ylabel(app.autoGraph, 'autocorrelation ')
-            app.autoGraph.Position = [47 332 395 285];
+            app.autoGraph.Position = [47 332-100 395 285];
 
             % Create spectralGraph
             app.spectralGraph = uiaxes(app.RandomProcessTab_2);
@@ -745,7 +745,7 @@ classdef app1_exported < matlab.apps.AppBase
             xlabel(app.spectralGraph, 'Frequency (Hz)')
             ylabel(app.spectralGraph, 'Power\Frequency (Watt\Hz)')
             zlabel(app.spectralGraph, 'Z')
-            app.spectralGraph.Position = [450 332 411 285];
+            app.spectralGraph.Position = [450 332-100 411 285];
 
             % Create Label_4
             app.Label_4 = uilabel(app.RandomProcessTab_2);
@@ -754,85 +754,85 @@ classdef app1_exported < matlab.apps.AppBase
             % Create LOADPROCESSDATAFILESButton
             app.LOADPROCESSDATAFILESButton = uibutton(app.RandomProcessTab_2, 'push');
             app.LOADPROCESSDATAFILESButton.ButtonPushedFcn = createCallbackFcn(app, @LOADPROCESSDATAFILESButtonPushed, true);
-            app.LOADPROCESSDATAFILESButton.Position = [148 931 270 28];
+            app.LOADPROCESSDATAFILESButton.Position = [148 931-100 270 28];
             app.LOADPROCESSDATAFILESButton.Text = 'LOAD PROCESS DATA FILES';
 
             % Create fileInfo
             app.fileInfo = uilabel(app.RandomProcessTab_2);
             app.fileInfo.BackgroundColor = [0.902 0.902 0.902];
             app.fileInfo.FontSize = 14;
-            app.fileInfo.Position = [450 931 356 28];
+            app.fileInfo.Position = [450 931-100 356 28];
             app.fileInfo.Text = '';
 
             % Create TimeMeanofnthsamplefunctionLabel_2
             app.TimeMeanofnthsamplefunctionLabel_2 = uilabel(app.RandomProcessTab_2);
-            app.TimeMeanofnthsamplefunctionLabel_2.Position = [147 224 240 29];
+            app.TimeMeanofnthsamplefunctionLabel_2.Position = [147 224-100 240 29];
             app.TimeMeanofnthsamplefunctionLabel_2.Text = 'Time Mean of nth sample function';
 
             % Create timeMeanLabel
             app.timeMeanLabel = uilabel(app.RandomProcessTab_2);
             app.timeMeanLabel.BackgroundColor = [0.902 0.902 0.902];
-            app.timeMeanLabel.Position = [518 227 269 29];
+            app.timeMeanLabel.Position = [518 227-100 269 29];
             app.timeMeanLabel.Text = '';
 
             % Create timeMeanButton
             app.timeMeanButton = uibutton(app.RandomProcessTab_2, 'push');
             app.timeMeanButton.ButtonPushedFcn = createCallbackFcn(app, @timeMeanButtonPushed, true);
-            app.timeMeanButton.Position = [402 230 98 23];
+            app.timeMeanButton.Position = [402 230-100 98 23];
             app.timeMeanButton.Text = 'Load';
 
             % Create TimeAutocorrelationofnthsamplefunctionLabel
             app.TimeAutocorrelationofnthsamplefunctionLabel = uilabel(app.RandomProcessTab_2);
-            app.TimeAutocorrelationofnthsamplefunctionLabel.Position = [147 191 240 29];
+            app.TimeAutocorrelationofnthsamplefunctionLabel.Position = [147 191-100 240 29];
             app.TimeAutocorrelationofnthsamplefunctionLabel.Text = 'Time Autocorrelation of nth sample function';
 
             % Create autoCorrelationButton
             app.autoCorrelationButton = uibutton(app.RandomProcessTab_2, 'push');
             app.autoCorrelationButton.ButtonPushedFcn = createCallbackFcn(app, @autoCorrelationButtonPushed, true);
-            app.autoCorrelationButton.Position = [402 194 98 23];
+            app.autoCorrelationButton.Position = [402 194-100 98 23];
             app.autoCorrelationButton.Text = 'Load';
 
             % Create AutoLabel
             app.AutoLabel = uilabel(app.RandomProcessTab_2);
             app.AutoLabel.BackgroundColor = [0.902 0.902 0.902];
-            app.AutoLabel.Position = [519 191 269 29];
+            app.AutoLabel.Position = [519 191-100 269 29];
             app.AutoLabel.Text = '';
 
             % Create LoadButton
             app.LoadButton = uibutton(app.RandomProcessTab_2, 'push');
             app.LoadButton.ButtonPushedFcn = createCallbackFcn(app, @LoadButtonPushed, true);
-            app.LoadButton.Position = [402 156 98 25];
+            app.LoadButton.Position = [402 156-100 98 25];
             app.LoadButton.Text = 'Load';
 
             % Create sampleFunctionsLabel
             app.sampleFunctionsLabel = uilabel(app.RandomProcessTab_2);
             app.sampleFunctionsLabel.BackgroundColor = [0.902 0.902 0.902];
             app.sampleFunctionsLabel.FontSize = 14;
-            app.sampleFunctionsLabel.Position = [518 154 269 29];
+            app.sampleFunctionsLabel.Position = [518 154-100 269 29];
             app.sampleFunctionsLabel.Text = '';
 
             % Create TotalAveragePowerLabel
             app.TotalAveragePowerLabel = uilabel(app.RandomProcessTab_2);
             app.TotalAveragePowerLabel.FontSize = 14;
-            app.TotalAveragePowerLabel.Position = [257 280 140 22];
+            app.TotalAveragePowerLabel.Position = [257 280-100 140 22];
             app.TotalAveragePowerLabel.Text = 'Total Average Power: ';
 
             % Create averagePowerLabel
             app.averagePowerLabel = uilabel(app.RandomProcessTab_2);
             app.averagePowerLabel.BackgroundColor = [0.902 0.902 0.902];
             app.averagePowerLabel.FontSize = 14;
-            app.averagePowerLabel.Position = [396 277 225 28];
+            app.averagePowerLabel.Position = [396 277-100 225 28];
             app.averagePowerLabel.Text = '';
 
             % Create WattLabel
             app.WattLabel = uilabel(app.RandomProcessTab_2);
             app.WattLabel.FontSize = 14;
-            app.WattLabel.Position = [630 277 33 22];
+            app.WattLabel.Position = [630 277-100 33 22];
             app.WattLabel.Text = 'Watt';
 
             % Create PlotNnumberofsamplefunctionsLabel
             app.PlotNnumberofsamplefunctionsLabel = uilabel(app.RandomProcessTab_2);
-            app.PlotNnumberofsamplefunctionsLabel.Position = [147 154 240 29];
+            app.PlotNnumberofsamplefunctionsLabel.Position = [147 154-100 240 29];
             app.PlotNnumberofsamplefunctionsLabel.Text = 'Plot N number of sample functions';
 
             % Create ContextMenu
