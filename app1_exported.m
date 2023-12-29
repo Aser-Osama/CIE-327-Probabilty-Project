@@ -6,6 +6,10 @@ classdef app1_exported < matlab.apps.AppBase
         TabGroup                        matlab.ui.container.TabGroup
         RandomVariableTab               matlab.ui.container.Tab
         MGFtimeupperlimitLabel          matlab.ui.control.Label
+                MGFat0Label_2Val                matlab.ui.control.Label
+        MGFat0LabelVal                  matlab.ui.control.Label
+        MGFat0Label_2                   matlab.ui.control.Label
+        MGFat0Label                     matlab.ui.control.Label
         timelim                         matlab.ui.control.NumericEditField
         ExpParam2Label_2                matlab.ui.control.Label
         ExpParam1Label_2                matlab.ui.control.Label
@@ -117,16 +121,21 @@ classdef app1_exported < matlab.apps.AppBase
                 app.VarianceValueLabel.Text = string(variance);
                 app.ThirdMomentValueLabel.Text = string(thirdMoment);
                 
-                secMoment = variance + mean^2;
-                x = linspace(l_in, u_in);
-                y = ones(length(x)) ;  
-                mgff = @(t) ((exp(b.*t) - exp(a.*t)) ./ ...
-                                t.*(b - a));
-                t = linspace(0, app.timelim.Value);
-                mgfarr = mgff(t);
-                plot(app.FirMoment, x, y * mean);
-                plot(app.SecMoment, x, y * secMoment);
-                                plot(app.mgf,t, mgfarr);
+            mgff = @(t) (exp(t.*b) - exp(t.*a)) ./ (t .* (b - a));
+            dmgff = @(t) (((b.*t - 1).*exp(b.*t)) + ((1 - a.*t).*exp(a.*t))) ./ ((b - a).*t.^2);
+            ddmgff =  @(t) ((b.^2.*t.^2-2.*b.*t+2).*exp(1).^(b.*t)+(-a.^2.*t.^2+2.*a.*t-2).*exp(1).^(a.*t))./((b-a).*t.^3);
+
+            t = linspace(0, app.timelim.Value, 1000); 
+            mgfarr = arrayfun(mgff, t);
+            dmgffarr = arrayfun(dmgff, t);
+            ddmgffarr = arrayfun(ddmgff, t);   
+
+            app.MGFat0LabelVal.Text = string((a+b)/2);
+            app.MGFat0Label_2Val.Text = string((a^2/3 + (a * b)/3 + b^2/3));
+
+            plot(app.FirMoment, t, dmgffarr);
+            plot(app.SecMoment, t, ddmgffarr);
+            plot(app.mgf,t, mgfarr);
 
                 
             else
@@ -161,20 +170,31 @@ classdef app1_exported < matlab.apps.AppBase
             format long;
             thirdMoment = integral(fun,l_in,u_in);
 
-            app.MeanValueLabel.Text = string(mean);
-            app.VarianceValueLabel.Text = string(variance);
-            app.ThirdMomentValueLabel.Text = string(thirdMoment);
-            app.InvalidSampleFileWarning.Text = "";
+m = mean;
+v = variance;
+                 % Define the MGF
+            mgff = @(t) exp(mean .* t + 0.5 .* (t.^2) .* variance);
+            
+            % Define the first derivative of the MGF
+            dmgff = @(t) m .* exp(m .* t + (t.^2 .* v)/2) + t .* v .* exp(m .* t + (t.^2 .* v)/2);
+            
+            % Define the second derivative of the MGF
+            ddmgff = @(t) (variance + (mean + variance .* t).^2) .* exp(mean .* t + 0.5 .* (t.^2) .* variance);
 
-                secMoment = variance + mean^2;
-                x = linspace(l_in, u_in);
-                y = ones(length(x)) ;
-                mgff = @(t) exp(mean .* t + 0.5 .* variance .^ 2 .* t.^2);
-                t = linspace(0, app.timelim.Value);
-                mgfarr = mgff(t);
-                plot(app.FirMoment, x, y * mean);
-                plot(app.SecMoment, x, y * secMoment);
-                plot(app.mgf,t, mgfarr);
+            t = linspace(0, app.timelim.Value, 1000); 
+            mgfarr = arrayfun(mgff, t);
+            dmgffarr = arrayfun(dmgff, t);
+            ddmgffarr = arrayfun(ddmgff, t);   
+
+            app.MGFat0LabelVal.Text = string(dmgffarr(1));
+            app.MGFat0Label_2Val.Text = string(ddmgffarr(1));
+
+            plot(app.FirMoment, t, dmgffarr);
+            plot(app.SecMoment, t, ddmgffarr);
+            plot(app.mgf,t, mgfarr);
+
+
+
             else
                             app.InvalidSampleFileWarning.FontColor = "red";
 
@@ -206,15 +226,22 @@ classdef app1_exported < matlab.apps.AppBase
             app.MeanValueLabel.Text = string(mean);
             app.VarianceValueLabel.Text = string(variance);
             app.ThirdMomentValueLabel.Text = string(thirdMoment);
-            
-                x1 = linspace(x(1), x(end), N);
-                y = ones(1,N) ;
-                mgff = @(t) exp(x .* t) .* app.FXRV;
-                t = linspace(0, app.timelim.Value, N);
-                mgfarr = mgff(t);
-                plot(app.FirMoment, x1, y * mean);
-                plot(app.SecMoment, x1, y * secMoment);
-                plot(app.mgf,t, mgfarr);
+            Fx = app.FXRV;
+            mgff = @(t) sum(exp(x .* t) .* Fx);
+            dmgff = @(t) sum(x .* exp(x .* t) .* Fx);
+            ddmgff = @(t) sum(x.^2 .* exp(x .* t) .* Fx);
+
+            t = linspace(0, app.timelim.Value, 100); 
+            mgfarr = arrayfun(mgff, t);
+            dmgffarr = arrayfun(dmgff, t);
+            ddmgffarr = arrayfun(ddmgff, t);   
+
+            app.MGFat0LabelVal.Text = string(dmgffarr(1));
+            app.MGFat0Label_2Val.Text = string(ddmgffarr(1));
+
+            plot(app.FirMoment, t, dmgffarr);
+            plot(app.SecMoment, t, ddmgffarr);
+            plot(app.mgf,t, mgfarr);
 
 
             app.InvalidSampleFileWarning.Text = "";
@@ -501,7 +528,7 @@ classdef app1_exported < matlab.apps.AppBase
             app.FirMoment = uiaxes(app.RandomVariableTab);
             title(app.FirMoment, 'First Moment')
             xlabel(app.FirMoment, 'X')
-            ylabel(app.FirMoment, 'E(x)')
+            ylabel(app.FirMoment, 'd/dt(mgf(t))')
             zlabel(app.FirMoment, 'Z')
             app.FirMoment.Position = [2 350 481 218];
 
@@ -509,7 +536,7 @@ classdef app1_exported < matlab.apps.AppBase
             app.SecMoment = uiaxes(app.RandomVariableTab);
             title(app.SecMoment, 'Second Moment')
             xlabel(app.SecMoment, 'X')
-            ylabel(app.SecMoment, 'E(x^2)')
+            ylabel(app.SecMoment, 'd^2/dt^2(mgf(t))')
             zlabel(app.SecMoment, 'Z')
             app.SecMoment.Position = [2 95 481 218];
 
@@ -713,6 +740,30 @@ classdef app1_exported < matlab.apps.AppBase
             app.timelim = uieditfield(app.RandomVariableTab, 'numeric');
             app.timelim.FontSize = 14;
             app.timelim.Position = [784 179 63 22];
+            
+            % Create MGFat0Label
+            app.MGFat0Label = uilabel(app.RandomVariableTab);
+            app.MGFat0Label.FontSize = 18;
+            app.MGFat0Label.Position = [9 56 109 23];
+            app.MGFat0Label.Text = 'MGF'' at 0';
+
+            % Create MGFat0Label_2
+            app.MGFat0Label_2 = uilabel(app.RandomVariableTab);
+            app.MGFat0Label_2.FontSize = 18;
+            app.MGFat0Label_2.Position = [9 34 110 23];
+            app.MGFat0Label_2.Text = 'MGF'''' at 0';
+
+            % Create MGFat0LabelVal
+            app.MGFat0LabelVal = uilabel(app.RandomVariableTab);
+            app.MGFat0LabelVal.FontSize = 18;
+            app.MGFat0LabelVal.Position = [118 56 365 23];
+            app.MGFat0LabelVal.Text = 'Label2';
+
+            % Create MGFat0Label_2Val
+            app.MGFat0Label_2Val = uilabel(app.RandomVariableTab);
+            app.MGFat0Label_2Val.FontSize = 18;
+            app.MGFat0Label_2Val.Position = [118 34 365 23];
+            app.MGFat0Label_2Val.Text = 'Label2';
 
             % Create MGFtimeupperlimitLabel
             app.MGFtimeupperlimitLabel = uilabel(app.RandomVariableTab);
