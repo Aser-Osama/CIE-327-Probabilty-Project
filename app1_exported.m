@@ -5,12 +5,6 @@ classdef app1_exported < matlab.apps.AppBase
         UIFigure                        matlab.ui.Figure
         TabGroup                        matlab.ui.container.TabGroup
         RandomVariableTab               matlab.ui.container.Tab
-        MGFtimeupperlimitLabel          matlab.ui.control.Label
-        timelim                         matlab.ui.control.NumericEditField
-        ExpParam2Label_2                matlab.ui.control.Label
-        ExpParam1Label_2                matlab.ui.control.Label
-        upperlim                        matlab.ui.control.NumericEditField
-        lowerlim                        matlab.ui.control.NumericEditField
         Label_2                         matlab.ui.control.Label
         Label                           matlab.ui.control.Label
         AserOsamaLabel                  matlab.ui.control.Label
@@ -29,6 +23,7 @@ classdef app1_exported < matlab.apps.AppBase
         RandomVariableLabel             matlab.ui.control.Label
         CIE327ProjectLabel              matlab.ui.control.Label
         InvalidSampleFileWarning        matlab.ui.control.Label
+        GarbageLabel                    matlab.ui.control.Label
         ExpParam2Label                  matlab.ui.control.Label
         ExpParam1Label                  matlab.ui.control.Label
         ExpParam2                       matlab.ui.control.NumericEditField
@@ -68,7 +63,7 @@ classdef app1_exported < matlab.apps.AppBase
         MyFilePath % Description
         SampleData % Description
         CanRun = 0
-        ExpType = "file" % Description
+        ExpType = "uniform" % Description
         RPt
         RPX
         SFM
@@ -76,73 +71,56 @@ classdef app1_exported < matlab.apps.AppBase
         SFn2
         ensembleMean
         R_x
-        FXRV % Description
     end
 
     methods (Access = private)
 
 
         function [] = RunUniform(app)
+            app.GarbageLabel.Text = "UNIFORM";
             a_in = app.ExpParam1.Value;
             b_in = app.ExpParam2.Value;
-            u_in = app.upperlim.Value;
-            l_in = app.lowerlim.Value;
-            if (u_in>l_in)
-
-                if ((a_in < u_in && b_in > l_in))
-                    if (l_in > a_in)
-                        a = l_in;
-                    else
-
-                        a = a_in;
-                    end
-                    if (u_in < b_in)
-                        b = u_in;
-                    else
-                        b = b_in;
-
-                    end
-                    app.InvalidSampleFileWarning.Text = "";
+            x = sort(app.SampleData);
+            if ((a_in < x(end) && b_in > x(1)))
+                if (x(1) > a_in)
+                    a = x(1);
                 else
-                    a = 0;
-                    b = 0;
+                    %                 closest = find( min( abs(x-a_in) )== abs(x-a_in) );
+                    %                 a = x(closest);
+                    a = a_in;
                 end
-                mean = (a + b) / 2;
-                variance = ((b-a) ^ 2)/12;
-                
+                if (x(end) < b_in)
+                    b = x(end);
+                else
+                    %                 closest = find( min( abs(x-b_in) )== abs(x-b_in) );
+                    %                 b = x(closest);
+                    b = b_in;
 
-                x3_fx = @(x) (1/(b-a)) .* x.^3;
-                thirdMoment = integral(x3_fx, a, b);
-                app.MeanValueLabel.Text = string(mean);
-                app.VarianceValueLabel.Text = string(variance);
-                app.ThirdMomentValueLabel.Text = string(thirdMoment);
-                
-                secMoment = variance + mean^2;
-                x = linspace(l_in, u_in);
-                y = ones(length(x)) ;  
-                mgff = @(t) ((exp(b.*t) - exp(a.*t)) ./ ...
-                                t.*(b - a));
-                t = linspace(0, app.timelim.Value);
-                mgfarr = mgff(t);
-                plot(app.FirMoment, x, y * mean);
-                plot(app.SecMoment, x, y * secMoment);
-                                plot(app.mgf,t, mgfarr);
-
-                
+                end
+                app.InvalidSampleFileWarning.Text = "";
             else
-                            app.InvalidSampleFileWarning.FontColor = "red";
-
-                app.InvalidSampleFileWarning.Text = "Lower limit cannot be bigger than or equal to upper limit";
-            end  
+                a = 0;
+                b = 0;
+                app.InvalidSampleFileWarning.FontColor = "red";
+                app.InvalidSampleFileWarning.Text = "A & B out of range of sample file.";
+            end
+            mean = (a + b) / 2;
+            variance = ((b-a) ^ 2)/12;
+            x3_fx = @(x) (1/(b-a)) .* x.^3;
+            thirdMoment = integral(x3_fx, a, b);
+            app.MeanValueLabel.Text = string(mean);
+            app.VarianceValueLabel.Text = string(variance);
+            app.ThirdMomentValueLabel.Text = string(thirdMoment);
+% % 
         end
 
         function [] = RunNormal(app)
+            app.GarbageLabel.Text = "NORMAL";
             mean = app.ExpParam1.Value;
             stdev = app.ExpParam2.Value;
-            u_in = app.upperlim.Value;
-            l_in = app.lowerlim.Value;
-            if (u_in>l_in)
             variance = stdev^2;
+
+            x = sort(app.SampleData);
 
             k = (1/sqrt(2*pi*variance));
             fun = @(x) (x.^3).*(k .* exp( ...
@@ -150,67 +128,14 @@ classdef app1_exported < matlab.apps.AppBase
                 ./ (2 .* variance))));
 
             format long;
-            thirdMoment = integral(fun,l_in,u_in);
+            thirdMoment = integral(fun,x(1),x(end));
 
             app.MeanValueLabel.Text = string(mean);
             app.VarianceValueLabel.Text = string(variance);
             app.ThirdMomentValueLabel.Text = string(thirdMoment);
             app.InvalidSampleFileWarning.Text = "";
 
-                secMoment = variance + mean^2;
-                x = linspace(l_in, u_in);
-                y = ones(length(x)) ;
-                mgff = @(t) exp(mean .* t + 0.5 .* variance .^ 2 .* t.^2);
-                t = linspace(0, app.timelim.Value);
-                mgfarr = mgff(t);
-                plot(app.FirMoment, x, y * mean);
-                plot(app.SecMoment, x, y * secMoment);
-                plot(app.mgf,t, mgfarr);
-            else
-                            app.InvalidSampleFileWarning.FontColor = "red";
-
-              app.InvalidSampleFileWarning.Text = "Lower limit cannot be bigger than or equal to upper limit";
-            end
-
         end
-        
-        function [] = RunFile(app)
-            app.InvalidSampleFileWarning.FontColor = "red";
-            app.InvalidSampleFileWarning.Text = "file loading...";
-            s = app.SampleData;
-            x = unique(s);
-            M = numel(s);
-            N = numel(x);
-
-
-            if (N == M)
-                app.FXRV = ones(1,N) ./ N;
-            else
-                counts = histcounts(s, [x(:); inf]);
-                app.FXRV = counts ./ M;
-            end
-            mean = dot(x, app.FXRV);
-            secMoment = dot((x.^2),app.FXRV);
-            variance = secMoment - (mean ^ 2);
-            thirdMoment = dot((x.^3),app.FXRV);
-
-            app.MeanValueLabel.Text = string(mean);
-            app.VarianceValueLabel.Text = string(variance);
-            app.ThirdMomentValueLabel.Text = string(thirdMoment);
-            
-                x1 = linspace(x(1), x(end), N);
-                y = ones(1,N) ;
-                mgff = @(t) exp(x .* t) .* app.FXRV;
-                t = linspace(0, app.timelim.Value, N);
-                mgfarr = mgff(t);
-                plot(app.FirMoment, x1, y * mean);
-                plot(app.SecMoment, x1, y * secMoment);
-                plot(app.mgf,t, mgfarr);
-
-
-            app.InvalidSampleFileWarning.Text = "";
-        end
-
     end
 
 
@@ -235,76 +160,33 @@ classdef app1_exported < matlab.apps.AppBase
         % Value changed function: ExperimenttypeDropDown
         function ExperimenttypeDropDownValueChanged(app, event)
             value = app.ExperimenttypeDropDown.Value;
-            if (value == "File Input")
-                app.ExpType = "file";
-                app.ExpParam1Label.Text = "-";
-                app.ExpParam2Label.Text = "-";
-                app.ExpParam1.Enable = "off";
-                app.ExpParam2.Enable = "off";
-                app.upperlim.Enable = "off";
-                app.lowerlim.Enable = "off";
-                app.ExpParam1Label.Enable = "off";
-                app.ExpParam1Label_2.Enable = "off";
-                app.ExpParam2Label_2.Enable = "off";
-                app.ExpParam2Label.Enable = "off";  
-
-                app.ExpParam1Label_2.Text = "-";
-                app.ExpParam2Label_2.Text = "-";
-                app.SampleFile.Enable = "on";
-                app.ImportRandomVariableButton.Enable = "on";                
-            elseif (value == "Uniform Distribution")
+            if (value == "Uniform Distribution")
                 app.ExpType = "uniform";
                 app.ExpParam1Label.Text = "A (Start)";
                 app.ExpParam2Label.Text = "B (End)";
-                app.ExpParam1.Enable = "on";
-                app.ExpParam2.Enable = "on";
-                app.upperlim.Enable = "on";
-                app.lowerlim.Enable = "on";
-                app.ExpParam1Label.Enable = "on";
-                app.ExpParam1Label_2.Enable = "on";
-                app.ExpParam2Label_2.Enable = "on";
-                app.ExpParam2Label.Enable = "on";
-                app.ExpParam1Label_2.Text = "Lower Limit";
-                app.ExpParam2Label_2.Text = "Upper Limit";
-
-                app.SampleFile.Enable = "off";
-                app.ImportRandomVariableButton.Enable = "off";
-
-            elseif (value == "Normal Distribution")
-                app.ExpType= "normal";
-                app.ExpParam1Label.Text = "Mu (Mean)";
-                app.ExpParam2Label.Text = "Sigma (Std. Dist.)";
-                app.ExpParam1.Enable = "on";
-                app.ExpParam2.Enable = "on";
-                app.upperlim.Enable = "on";
-                app.lowerlim.Enable = "on";
-                app.ExpParam1Label.Enable = "on";
-                app.ExpParam1Label_2.Enable = "on";
-                app.ExpParam2Label_2.Enable = "on";
-                app.ExpParam2Label.Enable = "on";
-                              app.ExpParam1Label_2.Text = "Lower Limit";
-                app.ExpParam2Label_2.Text = "Upper Limit";
-                app.SampleFile.Enable = "off";
-                app.ImportRandomVariableButton.Enable = "off";                
+            else
+                if (value == "Normal Distribution")
+                    app.ExpType= "normal";
+                    app.ExpParam1Label.Text = "Mu (Mean)";
+                    app.ExpParam2Label.Text = "Sigma (Std. Dist.)";
+                end
             end
-
         end
 
         % Button pushed function: RunRandomVariableButton
         function RunRandomVariableButtonPushed(app, event)
+            if (app.CanRun)
+                app.SampleData = sort(app.SampleData);
 
-            if (app.ExpType == "uniform")
-                app.RunUniform();
-            elseif (app.ExpType == "normal")
-                app.RunNormal();
-            elseif (app.ExpType == "file")
-
-                if (app.CanRun)
-                    app.RunFile()
-                else
-                    app.InvalidSampleFileWarning.FontColor = "red";
-                    app.InvalidSampleFileWarning.Text = "Please enter a (working) sample file";
+                if (app.ExpType == "uniform")
+                    app.RunUniform();
+                elseif (app.ExpType == "normal")
+                    app.RunNormal();
                 end
+            else
+                app.InvalidSampleFileWarning.FontColor = "red";
+                app.InvalidSampleFileWarning.Text = "Please enter a (working) sample file";
+
             end
         end
 
@@ -474,7 +356,7 @@ classdef app1_exported < matlab.apps.AppBase
 
             % Create TabGroup
             app.TabGroup = uitabgroup(app.UIFigure);
-            app.TabGroup.Position = [2 1 891 908];
+            app.TabGroup.Position = [2 -95 908 1004];
 
             % Create RandomVariableTab
             app.RandomVariableTab = uitab(app.TabGroup);
@@ -483,54 +365,57 @@ classdef app1_exported < matlab.apps.AppBase
             % Create mgf
             app.mgf = uiaxes(app.RandomVariableTab);
             title(app.mgf, 'MGF')
-            xlabel(app.mgf, 't')
-            ylabel(app.mgf, 'mgf(t)')
+            xlabel(app.mgf, 'X')
+            ylabel(app.mgf, 'Y')
             zlabel(app.mgf, 'Z')
-            app.mgf.Position = [3 606 480 217];
+            app.mgf.Position = [1 671 486 300];
 
             % Create FirMoment
             app.FirMoment = uiaxes(app.RandomVariableTab);
             title(app.FirMoment, 'First Moment')
             xlabel(app.FirMoment, 'X')
-            ylabel(app.FirMoment, 'E(x)')
+            ylabel(app.FirMoment, 'Y')
             zlabel(app.FirMoment, 'Z')
-            app.FirMoment.Position = [2 350 481 218];
+            app.FirMoment.Position = [0 350 487 301];
 
             % Create SecMoment
             app.SecMoment = uiaxes(app.RandomVariableTab);
             title(app.SecMoment, 'Second Moment')
             xlabel(app.SecMoment, 'X')
-            ylabel(app.SecMoment, 'E(x^2)')
+            ylabel(app.SecMoment, 'Y')
             zlabel(app.SecMoment, 'Z')
-            app.SecMoment.Position = [2 95 481 218];
+            app.SecMoment.Position = [0 29 487 301];
 
             % Create ExpParam1
             app.ExpParam1 = uieditfield(app.RandomVariableTab, 'numeric');
             app.ExpParam1.FontSize = 14;
-            app.ExpParam1.Enable = 'off';
-            app.ExpParam1.Position = [590 119 65 22];
+            app.ExpParam1.Position = [620 155 65 22];
 
             % Create ExpParam2
             app.ExpParam2 = uieditfield(app.RandomVariableTab, 'numeric');
             app.ExpParam2.FontSize = 14;
-            app.ExpParam2.Enable = 'off';
-            app.ExpParam2.Position = [783 119 65 22];
+            app.ExpParam2.Position = [813 155 65 22];
 
             % Create ExpParam1Label
             app.ExpParam1Label = uilabel(app.RandomVariableTab);
             app.ExpParam1Label.HorizontalAlignment = 'right';
             app.ExpParam1Label.FontSize = 14;
-            app.ExpParam1Label.Enable = 'off';
-            app.ExpParam1Label.Position = [509 119 79 22];
-            app.ExpParam1Label.Text = '-';
+            app.ExpParam1Label.Position = [539 155 79 22];
+            app.ExpParam1Label.Text = 'A (Start)';
 
             % Create ExpParam2Label
             app.ExpParam2Label = uilabel(app.RandomVariableTab);
             app.ExpParam2Label.HorizontalAlignment = 'right';
             app.ExpParam2Label.FontSize = 14;
-            app.ExpParam2Label.Enable = 'off';
-            app.ExpParam2Label.Position = [654 119 126 22];
-            app.ExpParam2Label.Text = '-';
+            app.ExpParam2Label.Position = [684 155 126 22];
+            app.ExpParam2Label.Text = 'B (End)';
+
+            % Create GarbageLabel
+            app.GarbageLabel = uilabel(app.RandomVariableTab);
+            app.GarbageLabel.BackgroundColor = [1 0 0];
+            app.GarbageLabel.FontSize = 36;
+            app.GarbageLabel.Position = [529 706 145 47];
+            app.GarbageLabel.Text = 'Garbage';
 
             % Create InvalidSampleFileWarning
             app.InvalidSampleFileWarning = uilabel(app.RandomVariableTab);
@@ -538,30 +423,32 @@ classdef app1_exported < matlab.apps.AppBase
             app.InvalidSampleFileWarning.WordWrap = 'on';
             app.InvalidSampleFileWarning.FontSize = 14;
             app.InvalidSampleFileWarning.FontColor = [1 0 0];
-            app.InvalidSampleFileWarning.Position = [498 638 348 59];
+            app.InvalidSampleFileWarning.Position = [541 227 348 59];
             app.InvalidSampleFileWarning.Text = '';
 
             % Create CIE327ProjectLabel
             app.CIE327ProjectLabel = uilabel(app.RandomVariableTab);
+            app.CIE327ProjectLabel.BackgroundColor = [0.9412 0.9412 0.9412];
             app.CIE327ProjectLabel.HorizontalAlignment = 'center';
             app.CIE327ProjectLabel.FontSize = 48;
             app.CIE327ProjectLabel.FontWeight = 'bold';
-            app.CIE327ProjectLabel.Position = [499 801 351 62];
+            app.CIE327ProjectLabel.Position = [485 897 422 62];
             app.CIE327ProjectLabel.Text = 'CIE 327 Project';
 
             % Create RandomVariableLabel
             app.RandomVariableLabel = uilabel(app.RandomVariableTab);
+            app.RandomVariableLabel.BackgroundColor = [0.9412 0.9412 0.9412];
             app.RandomVariableLabel.HorizontalAlignment = 'center';
             app.RandomVariableLabel.FontSize = 24;
             app.RandomVariableLabel.FontWeight = 'bold';
-            app.RandomVariableLabel.Position = [499 771 349 31];
+            app.RandomVariableLabel.Position = [486 867 421 31];
             app.RandomVariableLabel.Text = 'Random Variable';
 
             % Create RandomVariableVarianceLabel
             app.RandomVariableVarianceLabel = uilabel(app.RandomVariableTab);
             app.RandomVariableVarianceLabel.FontSize = 18;
             app.RandomVariableVarianceLabel.FontWeight = 'bold';
-            app.RandomVariableVarianceLabel.Position = [504 467 241 27];
+            app.RandomVariableVarianceLabel.Position = [530 527 241 27];
             app.RandomVariableVarianceLabel.Text = 'Random Variable Variance:';
 
             % Create VarianceValueLabel
@@ -570,14 +457,14 @@ classdef app1_exported < matlab.apps.AppBase
             app.VarianceValueLabel.HorizontalAlignment = 'center';
             app.VarianceValueLabel.FontWeight = 'bold';
             app.VarianceValueLabel.FontColor = [0.502 0.502 0.502];
-            app.VarianceValueLabel.Position = [502 431 347 37];
+            app.VarianceValueLabel.Position = [528 491 350 37];
             app.VarianceValueLabel.Text = 'VarianceValue';
 
             % Create RandomVariableThirdMomentLabel
             app.RandomVariableThirdMomentLabel = uilabel(app.RandomVariableTab);
             app.RandomVariableThirdMomentLabel.FontSize = 18;
             app.RandomVariableThirdMomentLabel.FontWeight = 'bold';
-            app.RandomVariableThirdMomentLabel.Position = [501 354 284 27];
+            app.RandomVariableThirdMomentLabel.Position = [530 402 284 27];
             app.RandomVariableThirdMomentLabel.Text = 'Random Variable Third Moment:';
 
             % Create ThirdMomentValueLabel
@@ -586,14 +473,14 @@ classdef app1_exported < matlab.apps.AppBase
             app.ThirdMomentValueLabel.HorizontalAlignment = 'center';
             app.ThirdMomentValueLabel.FontWeight = 'bold';
             app.ThirdMomentValueLabel.FontColor = [0.502 0.502 0.502];
-            app.ThirdMomentValueLabel.Position = [501 318 346 37];
+            app.ThirdMomentValueLabel.Position = [530 366 350 37];
             app.ThirdMomentValueLabel.Text = 'ThirdMomentValue';
 
             % Create RandomVariableMeanLabel
             app.RandomVariableMeanLabel = uilabel(app.RandomVariableTab);
             app.RandomVariableMeanLabel.FontSize = 18;
             app.RandomVariableMeanLabel.FontWeight = 'bold';
-            app.RandomVariableMeanLabel.Position = [503 580 209 27];
+            app.RandomVariableMeanLabel.Position = [528 643 209 27];
             app.RandomVariableMeanLabel.Text = 'Random Variable Mean:';
 
             % Create MeanValueLabel
@@ -602,7 +489,7 @@ classdef app1_exported < matlab.apps.AppBase
             app.MeanValueLabel.HorizontalAlignment = 'center';
             app.MeanValueLabel.FontWeight = 'bold';
             app.MeanValueLabel.FontColor = [0.502 0.502 0.502];
-            app.MeanValueLabel.Position = [503 544 345 37];
+            app.MeanValueLabel.Position = [528 607 350 37];
             app.MeanValueLabel.Text = 'MeanValue';
 
             % Create ImportRandomVariableButton
@@ -611,49 +498,49 @@ classdef app1_exported < matlab.apps.AppBase
             app.ImportRandomVariableButton.BackgroundColor = [0.902 0.902 0.902];
             app.ImportRandomVariableButton.FontSize = 14;
             app.ImportRandomVariableButton.FontWeight = 'bold';
-            app.ImportRandomVariableButton.Position = [754 18 100 62];
+            app.ImportRandomVariableButton.Position = [778 43 100 62];
             app.ImportRandomVariableButton.Text = {'Import '; 'Random'; 'Variable'};
 
             % Create RunRandomVariableButton
             app.RunRandomVariableButton = uibutton(app.RandomVariableTab, 'push');
             app.RunRandomVariableButton.ButtonPushedFcn = createCallbackFcn(app, @RunRandomVariableButtonPushed, true);
             app.RunRandomVariableButton.FontWeight = 'bold';
-            app.RunRandomVariableButton.Position = [509 220 347 34];
+            app.RunRandomVariableButton.Position = [530 194 347 34];
             app.RunRandomVariableButton.Text = 'Run Random Variable';
 
             % Create SampleFile
             app.SampleFile = uieditfield(app.RandomVariableTab, 'text');
             app.SampleFile.HorizontalAlignment = 'center';
             app.SampleFile.Placeholder = 'EnterSampleFile.m';
-            app.SampleFile.Position = [506 18 234 61];
+            app.SampleFile.Position = [530 43 234 61];
 
             % Create ExperimenttypeDropDownLabel
             app.ExperimenttypeDropDownLabel = uilabel(app.RandomVariableTab);
             app.ExperimenttypeDropDownLabel.HorizontalAlignment = 'right';
             app.ExperimenttypeDropDownLabel.FontSize = 14;
-            app.ExperimenttypeDropDownLabel.Position = [509 87 106 22];
+            app.ExperimenttypeDropDownLabel.Position = [539 123 106 22];
             app.ExperimenttypeDropDownLabel.Text = 'Experiment type';
 
             % Create ExperimenttypeDropDown
             app.ExperimenttypeDropDown = uidropdown(app.RandomVariableTab);
-            app.ExperimenttypeDropDown.Items = {'File Input', 'Uniform Distribution', 'Normal Distribution'};
+            app.ExperimenttypeDropDown.Items = {'Uniform Distribution', 'Normal Distribution'};
             app.ExperimenttypeDropDown.ValueChangedFcn = createCallbackFcn(app, @ExperimenttypeDropDownValueChanged, true);
             app.ExperimenttypeDropDown.FontSize = 14;
-            app.ExperimenttypeDropDown.Position = [623 87 224 22];
-            app.ExperimenttypeDropDown.Value = 'File Input';
+            app.ExperimenttypeDropDown.Position = [653 123 224 22];
+            app.ExperimenttypeDropDown.Value = 'Uniform Distribution';
 
             % Create SaifeldenMohamedLabel
             app.SaifeldenMohamedLabel = uilabel(app.RandomVariableTab);
             app.SaifeldenMohamedLabel.FontSize = 22;
             app.SaifeldenMohamedLabel.FontWeight = 'bold';
-            app.SaifeldenMohamedLabel.Position = [499 715 351 47];
+            app.SaifeldenMohamedLabel.Position = [529 811 351 47];
             app.SaifeldenMohamedLabel.Text = 'Saifelden Mohamed ';
 
             % Create AserOsamaLabel
             app.AserOsamaLabel = uilabel(app.RandomVariableTab);
             app.AserOsamaLabel.FontSize = 22;
             app.AserOsamaLabel.FontWeight = 'bold';
-            app.AserOsamaLabel.Position = [498 696 349 37];
+            app.AserOsamaLabel.Position = [528 792 349 37];
             app.AserOsamaLabel.Text = 'Aser Osama';
 
             % Create Label
@@ -661,7 +548,7 @@ classdef app1_exported < matlab.apps.AppBase
             app.Label.HorizontalAlignment = 'right';
             app.Label.FontSize = 22;
             app.Label.FontWeight = 'bold';
-            app.Label.Position = [500 715 347 47];
+            app.Label.Position = [530 811 347 47];
             app.Label.Text = '202100432';
 
             % Create Label_2
@@ -669,47 +556,8 @@ classdef app1_exported < matlab.apps.AppBase
             app.Label_2.HorizontalAlignment = 'right';
             app.Label_2.FontSize = 22;
             app.Label_2.FontWeight = 'bold';
-            app.Label_2.Position = [498 696 349 37];
+            app.Label_2.Position = [528 792 349 37];
             app.Label_2.Text = '202101266';
-
-            % Create lowerlim
-            app.lowerlim = uieditfield(app.RandomVariableTab, 'numeric');
-            app.lowerlim.FontSize = 14;
-            app.lowerlim.Enable = 'off';
-            app.lowerlim.Position = [591 148 65 22];
-
-            % Create upperlim
-            app.upperlim = uieditfield(app.RandomVariableTab, 'numeric');
-            app.upperlim.FontSize = 14;
-            app.upperlim.Enable = 'off';
-            app.upperlim.Position = [784 148 65 22];
-
-            % Create ExpParam1Label_2
-            app.ExpParam1Label_2 = uilabel(app.RandomVariableTab);
-            app.ExpParam1Label_2.HorizontalAlignment = 'right';
-            app.ExpParam1Label_2.FontSize = 14;
-            app.ExpParam1Label_2.Enable = 'off';
-            app.ExpParam1Label_2.Position = [510 148 79 22];
-            app.ExpParam1Label_2.Text = '-';
-
-            % Create ExpParam2Label_2
-            app.ExpParam2Label_2 = uilabel(app.RandomVariableTab);
-            app.ExpParam2Label_2.HorizontalAlignment = 'right';
-            app.ExpParam2Label_2.FontSize = 14;
-            app.ExpParam2Label_2.Enable = 'off';
-            app.ExpParam2Label_2.Position = [655 148 126 22];
-            app.ExpParam2Label_2.Text = '-';
-
-            % Create timelim
-            app.timelim = uieditfield(app.RandomVariableTab, 'numeric');
-            app.timelim.FontSize = 14;
-            app.timelim.Position = [784 179 63 22];
-
-            % Create MGFtimeupperlimitLabel
-            app.MGFtimeupperlimitLabel = uilabel(app.RandomVariableTab);
-            app.MGFtimeupperlimitLabel.FontSize = 14;
-            app.MGFtimeupperlimitLabel.Position = [645 179 135 22];
-            app.MGFtimeupperlimitLabel.Text = 'MGF time upper limit';
 
             % Create RandomProcessTab_2
             app.RandomProcessTab_2 = uitab(app.TabGroup);
@@ -740,7 +588,7 @@ classdef app1_exported < matlab.apps.AppBase
 
             % Create Label_4
             app.Label_4 = uilabel(app.RandomProcessTab_2);
-            app.Label_4.Position = [1 688 2 2];
+            app.Label_4.Position = [1 784 2 2];
 
             % Create LOADPROCESSDATAFILESButton
             app.LOADPROCESSDATAFILESButton = uibutton(app.RandomProcessTab_2, 'push');
