@@ -37,28 +37,30 @@ classdef app1_exported < matlab.apps.AppBase
         FirMoment                       matlab.ui.control.UIAxes
         mgf                             matlab.ui.control.UIAxes
         RandomProcessTab_2              matlab.ui.container.Tab
+        PlotNnumberofsamplefunctionsLabel  matlab.ui.control.Label
         WattLabel                       matlab.ui.control.Label
-        AutoLabel                       matlab.ui.control.Label
-        timeMeanLabel                   matlab.ui.control.Label
-        sampleFunctionsLabel            matlab.ui.control.Label
-        fileInfo                        matlab.ui.control.Label
-        Label_5                         matlab.ui.control.Label
+        averagePowerLabel               matlab.ui.control.Label
         TotalAveragePowerLabel          matlab.ui.control.Label
-        LOADPROCESSDATAFILESButton      matlab.ui.control.Button
-        TimeMeanofnthsamplefunctionLabel_2  matlab.ui.control.Label
-        AutocorrelationfunctionnthsamplefunctionLabel_2  matlab.ui.control.Label
-        plotMnumberofsamplefunctionsLabel  matlab.ui.control.Label
-        Label_4                         matlab.ui.control.Label
-        timeMeanButton                  matlab.ui.control.Button
+        sampleFunctionsLabel            matlab.ui.control.Label
+        LoadButton                      matlab.ui.control.Button
+        AutoLabel                       matlab.ui.control.Label
         autoCorrelationButton           matlab.ui.control.Button
-        LoadButton_4                    matlab.ui.control.Button
-        ensembleGraph                   matlab.ui.control.UIAxes
-        sampleGraph                     matlab.ui.control.UIAxes
+        TimeAutocorrelationofnthsamplefunctionLabel  matlab.ui.control.Label
+        timeMeanButton                  matlab.ui.control.Button
+        timeMeanLabel                   matlab.ui.control.Label
+        TimeMeanofnthsamplefunctionLabel_2  matlab.ui.control.Label
+        fileInfo                        matlab.ui.control.Label
+        LOADPROCESSDATAFILESButton      matlab.ui.control.Button
+        Label_4                         matlab.ui.control.Label
         spectralGraph                   matlab.ui.control.UIAxes
         autoGraph                       matlab.ui.control.UIAxes
+        ensembleGraph                   matlab.ui.control.UIAxes
         ContextMenu                     matlab.ui.container.ContextMenu
         Menu                            matlab.ui.container.Menu
         Menu2                           matlab.ui.container.Menu
+        ContextMenu2                    matlab.ui.container.ContextMenu
+        Menu_2                          matlab.ui.container.Menu
+        Menu2_2                         matlab.ui.container.Menu
     end
 
 
@@ -128,10 +130,19 @@ classdef app1_exported < matlab.apps.AppBase
 
                 
             else
-                            app.InvalidSampleFileWarning.FontColor = "red";
-
-                app.InvalidSampleFileWarning.Text = "Lower limit cannot be bigger than or equal to upper limit";
-            end  
+                a = 0;
+                b = 0;
+                app.InvalidSampleFileWarning.FontColor = "red";
+                app.InvalidSampleFileWarning.Text = "A & B out of range of sample file.";
+            end
+            mean = (a + b) / 2;
+            variance = ((b-a) ^ 2)/12;
+            x3_fx = @(x) (1/(b-a)) .* x.^3;
+            thirdMoment = integral(x3_fx, a, b);
+            app.MeanValueLabel.Text = string(mean);
+            app.VarianceValueLabel.Text = string(variance);
+            app.ThirdMomentValueLabel.Text = string(thirdMoment);
+% % 
         end
 
         function [] = RunNormal(app)
@@ -323,23 +334,44 @@ classdef app1_exported < matlab.apps.AppBase
                 plot(app.ensembleGraph, app.RPt, app.ensembleMean);
                 
 
+                x = mean(app.RPX, 1);
+                y = x;
+                
                 max_lag = 101;
-                app.R_x = xcorr(mean(app.RPX, 1), max_lag, 'coeff');
+                app.R_x = zeros(1, 2*max_lag + 1);
+                
+                for m = -max_lag:max_lag
+                    for n = 1:length(x)
+                        if n + m > 0 && n + m <= length(y)
+                            app.R_x(m + max_lag + 1) = app.R_x(m + max_lag + 1) + x(n) * y(n + m);
+                        end
+                    end
+                end
                 lag_values = -max_lag:max_lag;
+                app.R_x= app.R_x / app.R_x(max_lag + 1);
+
+           
                 plot(app.autoGraph, lag_values, app.R_x);
+
 
                 fs = 1 / (app.RPt(2) - app.RPt(1));
                 psd = abs(fft(app.R_x)).^2 / N;
                 freq = linspace(0, fs/2, length(psd));
-                stem(app.spectralGraph, freq, 10*log10(psd));
+                stem(app.spectralGraph, freq, psd);
+                                
+                df = freq(2) - freq(1);
+                total_avg_power = sum(psd) * df;
 
+                display(total_avg_power);
+            
+                app.averagePowerLabel.Text = num2str(total_avg_power);
             end
 
             
         end
 
-        % Button pushed function: LoadButton_4
-        function LoadButton_4Pushed(app, event)
+        % Button pushed function: LoadButton
+        function LoadButtonPushed(app, event)
             inputValue = inputdlg('Enter a numerical value:', 'Numeric Input', [1 50]);
             if isempty(inputValue)
                 app.sampleFunctionsLabel.Text = 'User canceled input.';
@@ -351,18 +383,21 @@ classdef app1_exported < matlab.apps.AppBase
                 else
                     app.SFM = numericValue;
                     app.sampleFunctionsLabel.Text = ['Value stored: ', num2str(app.SFM)];
-                    cla(app.sampleGraph);
-                
-                    t = app.RPt;  
-                    hold(app.sampleGraph, 'on');
+            
+                    figure('Name', 'Sample Functions', 'NumberTitle', 'off');
+            
+                    t = app.RPt;
+            
                     for row = 1:app.SFM
-                        plot(app.sampleGraph, t, app.RPX(row, :));
+                        % Create subplots for each row
+                        subplot(app.SFM, 1, row);
+                        plot(t, app.RPX(row, :));
+                        title(['Row ', num2str(row)]);
+                        xlabel('Time');
+                        ylabel('Amplitude');
                     end
-                    hold(app.sampleGraph, 'off');
-                
+            
                     app.sampleFunctionsLabel.Text = ['Plotted ', num2str(app.SFM), ' rows on the graph.'];
-
-
                 end
             end
         end
@@ -379,15 +414,11 @@ classdef app1_exported < matlab.apps.AppBase
                     app.timeMeanLabel.Text = 'Invalid input. Please enter a valid row number.';
                 else
                     app.SFn = rowNumber;
-                    app.timeMeanLabel.Text = ['Row number set: ', num2str(app.SFn)];
-                    cla(app.sampleGraph);
-                    
+                    app.timeMeanLabel.Text = ['Row number set: ', num2str(app.SFn)];                    
+                    selectedSampleFunction = app.RPX(app.SFn, :);
+                    timeMeanValue = mean(selectedSampleFunction);
+                    app.timeMeanLabel.Text=num2str(timeMeanValue);
 
-                    %xlabel(app.sampleGraph, 'Time');
-                    %ylabel(app.sampleGraph, 'Mean Amplitude');
-                    %title(app.sampleGraph, ['Time Mean Function for Row ', num2str(app.SFn)]);
-                    
-                    %app.timeMeanLabel.Text = ['Plotted Time Mean Function for Row ', num2str(app.SFn)];
                 end
             end
 
@@ -400,23 +431,42 @@ classdef app1_exported < matlab.apps.AppBase
                 app.AutoLabel.Text = 'User canceled input.';
             else
                 rowNumber = str2double(inputValue{1});
-    
+            
                 if isnan(rowNumber) || rowNumber < 1 || rowNumber > size(app.RPX, 1)
                     app.AutoLabel.Text = 'Invalid input. Please enter a valid row number.';
                 else
                     app.SFn2 = rowNumber;
                     app.AutoLabel.Text = ['Row number set: ', num2str(app.SFn2)];
-                    cla(app.sampleGraph);
-%                    max_lag = 101;
-%                    lag_values = -max_lag:max_lag;
+            
+                    max_lag = 101;
+                    lag_values = -max_lag:max_lag;
+                    x=app.RPX(app.SFn2, :);
+                    y = x;
+                    
+                    autocorrelation = zeros(1, 2*max_lag + 1);
+                    
+                    for m = -max_lag:max_lag
+                        for n = 1:length(x)
+                            if n + m > 0 && n + m <= length(y)
+                                autocorrelation(m + max_lag + 1) = autocorrelation(m + max_lag + 1) + x(n) * y(n + m);
+                            end
+                        end
+                    end
 
-%                   autocorrelation = xcorr(app.RPX(app.SFn2, :),max_lag, 'coeff');
-%                   plot(app.sampleGraph, lag_values, autocorrelation);
+                    autocorrelation = autocorrelation / autocorrelation(max_lag + 1);
 
+
+
+                    figure('Name', 'Autocorrelation Function', 'NumberTitle', 'off');
+
+                    plot(lag_values, autocorrelation);
+                    xlabel('Lag');
+                    ylabel('Autocorrelation');
+                    title(['Autocorrelation Function for Row ', num2str(app.SFn2)]);
+            
                     app.AutoLabel.Text = ['Plotted Autocorrelation Function for Row ', num2str(app.SFn2)];
                 end
             end
-   
         end
     end
 
@@ -674,12 +724,20 @@ classdef app1_exported < matlab.apps.AppBase
             app.RandomProcessTab_2 = uitab(app.TabGroup);
             app.RandomProcessTab_2.Title = 'Random Process';
 
+            % Create ensembleGraph
+            app.ensembleGraph = uiaxes(app.RandomProcessTab_2);
+            title(app.ensembleGraph, 'Ensemble Mean')
+            xlabel(app.ensembleGraph, 'X')
+            ylabel(app.ensembleGraph, 'Y')
+            zlabel(app.ensembleGraph, 'Z')
+            app.ensembleGraph.Position = [47 616 814 296];
+
             % Create autoGraph
             app.autoGraph = uiaxes(app.RandomProcessTab_2);
             title(app.autoGraph, 'auto-correlation function')
             xlabel(app.autoGraph, 'Time Delay (s)')
             ylabel(app.autoGraph, 'autocorrelation ')
-            app.autoGraph.Position = [77 547 382 228];
+            app.autoGraph.Position = [47 332 395 285];
 
             % Create spectralGraph
             app.spectralGraph = uiaxes(app.RandomProcessTab_2);
@@ -687,110 +745,95 @@ classdef app1_exported < matlab.apps.AppBase
             xlabel(app.spectralGraph, 'Frequency (Hz)')
             ylabel(app.spectralGraph, 'Power\Frequency (Watt\Hz)')
             zlabel(app.spectralGraph, 'Z')
-            app.spectralGraph.Position = [462 547 381 228];
-
-            % Create sampleGraph
-            app.sampleGraph = uiaxes(app.RandomProcessTab_2);
-            title(app.sampleGraph, 'Sample Graph')
-            xlabel(app.sampleGraph, 'T (s)')
-            ylabel(app.sampleGraph, 'X')
-            zlabel(app.sampleGraph, 'Z')
-            app.sampleGraph.Position = [372 18 467 300];
-
-            % Create ensembleGraph
-            app.ensembleGraph = uiaxes(app.RandomProcessTab_2);
-            title(app.ensembleGraph, 'Ensemble Mean')
-            xlabel(app.ensembleGraph, 'X')
-            ylabel(app.ensembleGraph, 'Y')
-            zlabel(app.ensembleGraph, 'Z')
-            app.ensembleGraph.Position = [79 320 768 228];
-
-            % Create LoadButton_4
-            app.LoadButton_4 = uibutton(app.RandomProcessTab_2, 'push');
-            app.LoadButton_4.ButtonPushedFcn = createCallbackFcn(app, @LoadButton_4Pushed, true);
-            app.LoadButton_4.Position = [81 231 103 23];
-            app.LoadButton_4.Text = 'Load';
-
-            % Create autoCorrelationButton
-            app.autoCorrelationButton = uibutton(app.RandomProcessTab_2, 'push');
-            app.autoCorrelationButton.ButtonPushedFcn = createCallbackFcn(app, @autoCorrelationButtonPushed, true);
-            app.autoCorrelationButton.Position = [84 40 98 23];
-            app.autoCorrelationButton.Text = 'Load';
-
-            % Create timeMeanButton
-            app.timeMeanButton = uibutton(app.RandomProcessTab_2, 'push');
-            app.timeMeanButton.ButtonPushedFcn = createCallbackFcn(app, @timeMeanButtonPushed, true);
-            app.timeMeanButton.Position = [81 141 107 23];
-            app.timeMeanButton.Text = 'Load';
+            app.spectralGraph.Position = [450 332 411 285];
 
             % Create Label_4
             app.Label_4 = uilabel(app.RandomProcessTab_2);
             app.Label_4.Position = [1 688 2 2];
 
-            % Create plotMnumberofsamplefunctionsLabel
-            app.plotMnumberofsamplefunctionsLabel = uilabel(app.RandomProcessTab_2);
-            app.plotMnumberofsamplefunctionsLabel.Position = [79 265 188 29];
-            app.plotMnumberofsamplefunctionsLabel.Text = 'plot M number of sample functions';
-
-            % Create AutocorrelationfunctionnthsamplefunctionLabel_2
-            app.AutocorrelationfunctionnthsamplefunctionLabel_2 = uilabel(app.RandomProcessTab_2);
-            app.AutocorrelationfunctionnthsamplefunctionLabel_2.Position = [81 88 240 29];
-            app.AutocorrelationfunctionnthsamplefunctionLabel_2.Text = 'Autocorrelation function nth sample function';
-
-            % Create TimeMeanofnthsamplefunctionLabel_2
-            app.TimeMeanofnthsamplefunctionLabel_2 = uilabel(app.RandomProcessTab_2);
-            app.TimeMeanofnthsamplefunctionLabel_2.Position = [81 176 240 29];
-            app.TimeMeanofnthsamplefunctionLabel_2.Text = 'Time Mean of nth sample function';
-
             % Create LOADPROCESSDATAFILESButton
             app.LOADPROCESSDATAFILESButton = uibutton(app.RandomProcessTab_2, 'push');
             app.LOADPROCESSDATAFILESButton.ButtonPushedFcn = createCallbackFcn(app, @LOADPROCESSDATAFILESButtonPushed, true);
-            app.LOADPROCESSDATAFILESButton.Position = [160 826 270 28];
+            app.LOADPROCESSDATAFILESButton.Position = [148 931 270 28];
             app.LOADPROCESSDATAFILESButton.Text = 'LOAD PROCESS DATA FILES';
-
-            % Create TotalAveragePowerLabel
-            app.TotalAveragePowerLabel = uilabel(app.RandomProcessTab_2);
-            app.TotalAveragePowerLabel.FontSize = 14;
-            app.TotalAveragePowerLabel.Position = [160 789 270 22];
-            app.TotalAveragePowerLabel.Text = 'Total Average Power: ';
-
-            % Create Label_5
-            app.Label_5 = uilabel(app.RandomProcessTab_2);
-            app.Label_5.BackgroundColor = [0.902 0.902 0.902];
-            app.Label_5.FontSize = 14;
-            app.Label_5.Position = [458 786 279 28];
-            app.Label_5.Text = '';
 
             % Create fileInfo
             app.fileInfo = uilabel(app.RandomProcessTab_2);
             app.fileInfo.BackgroundColor = [0.902 0.902 0.902];
             app.fileInfo.FontSize = 14;
-            app.fileInfo.Position = [458 826 356 28];
+            app.fileInfo.Position = [450 931 356 28];
             app.fileInfo.Text = '';
 
-            % Create sampleFunctionsLabel
-            app.sampleFunctionsLabel = uilabel(app.RandomProcessTab_2);
-            app.sampleFunctionsLabel.BackgroundColor = [0.902 0.902 0.902];
-            app.sampleFunctionsLabel.Position = [192 225 176 29];
-            app.sampleFunctionsLabel.Text = '';
+            % Create TimeMeanofnthsamplefunctionLabel_2
+            app.TimeMeanofnthsamplefunctionLabel_2 = uilabel(app.RandomProcessTab_2);
+            app.TimeMeanofnthsamplefunctionLabel_2.Position = [147 224 240 29];
+            app.TimeMeanofnthsamplefunctionLabel_2.Text = 'Time Mean of nth sample function';
 
             % Create timeMeanLabel
             app.timeMeanLabel = uilabel(app.RandomProcessTab_2);
             app.timeMeanLabel.BackgroundColor = [0.902 0.902 0.902];
-            app.timeMeanLabel.Position = [192 138 176 29];
+            app.timeMeanLabel.Position = [518 227 269 29];
             app.timeMeanLabel.Text = '';
+
+            % Create timeMeanButton
+            app.timeMeanButton = uibutton(app.RandomProcessTab_2, 'push');
+            app.timeMeanButton.ButtonPushedFcn = createCallbackFcn(app, @timeMeanButtonPushed, true);
+            app.timeMeanButton.Position = [402 230 98 23];
+            app.timeMeanButton.Text = 'Load';
+
+            % Create TimeAutocorrelationofnthsamplefunctionLabel
+            app.TimeAutocorrelationofnthsamplefunctionLabel = uilabel(app.RandomProcessTab_2);
+            app.TimeAutocorrelationofnthsamplefunctionLabel.Position = [147 191 240 29];
+            app.TimeAutocorrelationofnthsamplefunctionLabel.Text = 'Time Autocorrelation of nth sample function';
+
+            % Create autoCorrelationButton
+            app.autoCorrelationButton = uibutton(app.RandomProcessTab_2, 'push');
+            app.autoCorrelationButton.ButtonPushedFcn = createCallbackFcn(app, @autoCorrelationButtonPushed, true);
+            app.autoCorrelationButton.Position = [402 194 98 23];
+            app.autoCorrelationButton.Text = 'Load';
 
             % Create AutoLabel
             app.AutoLabel = uilabel(app.RandomProcessTab_2);
             app.AutoLabel.BackgroundColor = [0.902 0.902 0.902];
-            app.AutoLabel.Position = [192 40 176 29];
+            app.AutoLabel.Position = [519 191 269 29];
             app.AutoLabel.Text = '';
+
+            % Create LoadButton
+            app.LoadButton = uibutton(app.RandomProcessTab_2, 'push');
+            app.LoadButton.ButtonPushedFcn = createCallbackFcn(app, @LoadButtonPushed, true);
+            app.LoadButton.Position = [402 156 98 25];
+            app.LoadButton.Text = 'Load';
+
+            % Create sampleFunctionsLabel
+            app.sampleFunctionsLabel = uilabel(app.RandomProcessTab_2);
+            app.sampleFunctionsLabel.BackgroundColor = [0.902 0.902 0.902];
+            app.sampleFunctionsLabel.FontSize = 14;
+            app.sampleFunctionsLabel.Position = [518 154 269 29];
+            app.sampleFunctionsLabel.Text = '';
+
+            % Create TotalAveragePowerLabel
+            app.TotalAveragePowerLabel = uilabel(app.RandomProcessTab_2);
+            app.TotalAveragePowerLabel.FontSize = 14;
+            app.TotalAveragePowerLabel.Position = [257 280 140 22];
+            app.TotalAveragePowerLabel.Text = 'Total Average Power: ';
+
+            % Create averagePowerLabel
+            app.averagePowerLabel = uilabel(app.RandomProcessTab_2);
+            app.averagePowerLabel.BackgroundColor = [0.902 0.902 0.902];
+            app.averagePowerLabel.FontSize = 14;
+            app.averagePowerLabel.Position = [396 277 225 28];
+            app.averagePowerLabel.Text = '';
 
             % Create WattLabel
             app.WattLabel = uilabel(app.RandomProcessTab_2);
             app.WattLabel.FontSize = 14;
-            app.WattLabel.Position = [748 789 33 22];
+            app.WattLabel.Position = [630 277 33 22];
             app.WattLabel.Text = 'Watt';
+
+            % Create PlotNnumberofsamplefunctionsLabel
+            app.PlotNnumberofsamplefunctionsLabel = uilabel(app.RandomProcessTab_2);
+            app.PlotNnumberofsamplefunctionsLabel.Position = [147 154 240 29];
+            app.PlotNnumberofsamplefunctionsLabel.Text = 'Plot N number of sample functions';
 
             % Create ContextMenu
             app.ContextMenu = uicontextmenu(app.UIFigure);
@@ -802,9 +845,17 @@ classdef app1_exported < matlab.apps.AppBase
             % Create Menu2
             app.Menu2 = uimenu(app.ContextMenu);
             app.Menu2.Text = 'Menu2';
-            
-            % Assign app.ContextMenu
-            app.LoadButton_4.ContextMenu = app.ContextMenu;
+
+            % Create ContextMenu2
+            app.ContextMenu2 = uicontextmenu(app.UIFigure);
+
+            % Create Menu_2
+            app.Menu_2 = uimenu(app.ContextMenu2);
+            app.Menu_2.Text = 'Menu';
+
+            % Create Menu2_2
+            app.Menu2_2 = uimenu(app.ContextMenu2);
+            app.Menu2_2.Text = 'Menu2';
 
             % Show the figure after all components are created
             app.UIFigure.Visible = 'on';
