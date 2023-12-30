@@ -1,5 +1,5 @@
 <deployment-project plugin="plugin.apptool" plugin-version="1.0">
-  <configuration build-checksum="1084783714" file="C:\Users\asero\Desktop\CIE Y3\Probability Project\CIE-327-Probabilty-Project\proj.prj" location="C:\Users\asero\Desktop\CIE Y3\Probability Project\CIE-327-Probabilty-Project" name="proj" target="target.mlapps" target-name="Package App">
+  <configuration build-checksum="1582895122" file="C:\Users\asero\Desktop\CIE Y3\Probability Project\CIE-327-Probabilty-Project\proj.prj" location="C:\Users\asero\Desktop\CIE Y3\Probability Project\CIE-327-Probabilty-Project" name="proj" target="target.mlapps" target-name="Package App">
     <param.appname>proj</param.appname>
     <param.authnamewatermark />
     <param.email />
@@ -15,7 +15,7 @@
     <param.products.version />
     <param.platforms />
     <param.output>${PROJECT_ROOT}</param.output>
-    <param.guid>ff6cba45-8b00-4dbf-8374-34a6e4699992</param.guid>
+    <param.guid>08af2a4e-884c-408c-b561-869dcb1706c7</param.guid>
     <unset>
       <param.authnamewatermark />
       <param.email />
