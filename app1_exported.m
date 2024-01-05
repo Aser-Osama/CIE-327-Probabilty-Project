@@ -41,6 +41,9 @@ classdef app1_exported < matlab.apps.AppBase
         FirMoment                       matlab.ui.control.UIAxes
         mgf                             matlab.ui.control.UIAxes
         RandomProcessTab_2              matlab.ui.container.Tab
+        AutoLabel_2                     matlab.ui.control.Label
+        autoCorrelationButton_2         matlab.ui.control.Button
+        TimeAutocorrelation3DPlotLabel  matlab.ui.control.Label
         PlotNnumberofsamplefunctionsLabel  matlab.ui.control.Label
         WattLabel                       matlab.ui.control.Label
         averagePowerLabel               matlab.ui.control.Label
@@ -81,6 +84,8 @@ classdef app1_exported < matlab.apps.AppBase
         ensembleMean
         R_x
         FXRV % Description
+        N
+
     end
 
     methods (Access = private)
@@ -358,9 +363,9 @@ v = variance;
                 data = load(fullfile(path, file));
                 app.RPX= data.X; 
                 app.RPt = data.t;
+                app.N=length(app.RPX);
                 app.fileInfo.Text = ['File loaded successfully. X size: ', mat2str(size(app.RPX)), ', t size: ', mat2str(size(app.RPt))];
           
-                N=length(app.RPX);
 
                 app.ensembleMean = mean(app.RPX, 1);
                 plot(app.ensembleGraph, app.RPt, app.ensembleMean);
@@ -368,35 +373,30 @@ v = variance;
 
                 x = mean(app.RPX, 1);
                 y = x;
-                
                 max_lag = 101;
-                app.R_x = zeros(1, 2*max_lag + 1);
+                app.R_x = zeros(1, max_lag + 1);
                 
-                for m = -max_lag:max_lag
+                for m = 0:max_lag
                     for n = 1:length(x)
-                        if n + m > 0 && n + m <= length(y)
-                            app.R_x(m + max_lag + 1) = app.R_x(m + max_lag + 1) + x(n) * y(n + m);
+                        if n + m <= length(y)
+                            app.R_x(m + 1) = app.R_x(m + 1) + x(n) * y(n + m);
                         end
                     end
                 end
-                lag_values = -max_lag:max_lag;
-                app.R_x= app.R_x / app.R_x(max_lag + 1);
+                
+%               maxR_x = max(app.R_x);
+                app.R_x = app.R_x * (1/app.N);
+                
+                plot(app.autoGraph, 0:max_lag, app.R_x);
 
-           
-                plot(app.autoGraph, lag_values, app.R_x);
-
-
-                fs = 1 / (app.RPt(2) - app.RPt(1));
-                psd = abs(fft(app.R_x)).^2 / N;
-                freq = linspace(0, fs/2, length(psd));
-                stem(app.spectralGraph, freq, psd);
-                                
-                df = freq(2) - freq(1);
-                total_avg_power = sum(psd) * df;
-
-                display(total_avg_power);
-            
-                app.averagePowerLabel.Text = num2str(total_avg_power);
+                fft_result = fft(app.R_x, app.N);
+                fft_values = abs(fft_result).^2 / app.N;
+                
+                frequencies = (0:app.N-1) / (2*max_lag);
+                stem(app.spectralGraph, frequencies, fft_values);
+                
+                total_average_power = sum(fft_values) * (1 / app.N);
+                app.averagePowerLabel.Text = num2str(total_average_power);
             end
 
             
@@ -470,35 +470,61 @@ v = variance;
                     app.SFn2 = rowNumber;
                     app.AutoLabel.Text = ['Row number set: ', num2str(app.SFn2)];
             
-                    max_lag = 101;
-                    lag_values = -max_lag:max_lag;
+                    max_lag = 101;                    
                     x=app.RPX(app.SFn2, :);
                     y = x;
-                    
-                    autocorrelation = zeros(1, 2*max_lag + 1);
-                    
-                    for m = -max_lag:max_lag
+                    autocorrelation = zeros(1, max_lag + 1);
+                    for m = 0:max_lag
                         for n = 1:length(x)
-                            if n + m > 0 && n + m <= length(y)
-                                autocorrelation(m + max_lag + 1) = autocorrelation(m + max_lag + 1) + x(n) * y(n + m);
+                            if n + m <= length(y)
+                                autocorrelation(m + 1) = autocorrelation(m + 1) + x(n) * y(n + m);
                             end
                         end
                     end
-
-                    autocorrelation = autocorrelation / autocorrelation(max_lag + 1);
-
-
-
+                    
+ %                  maxAutocorrelation = max(autocorrelation);
+ %                  normalized_autocorrelation = autocorrelation / maxAutocorrelation;
+                    
+                    autocorrelation=autocorrelation*(1/app.N);
                     figure('Name', 'Autocorrelation Function', 'NumberTitle', 'off');
-
-                    plot(lag_values, autocorrelation);
+                    
+                    plot(0:max_lag, autocorrelation);
                     xlabel('Lag');
                     ylabel('Autocorrelation');
                     title(['Autocorrelation Function for Row ', num2str(app.SFn2)]);
-            
-                    app.AutoLabel.Text = ['Plotted Autocorrelation Function for Row ', num2str(app.SFn2)];
+                    
+                    app.AutoLabel.Text = ['Plotted Time Autocorrelation Function for Row ', num2str(app.SFn2)];
                 end
             end
+        end
+
+        % Button pushed function: autoCorrelationButton_2
+        function autoCorrelationButton_2Pushed(app, event)
+            X = app.RPX;
+            p = 1 / size(X, 1);
+            [m, n] = size(X);
+            R = zeros(m, m);
+            
+            for i = 1:m
+                for j = 1:m
+                    R(i, j) = sum(X(:, i) .* X(:, j) * p);
+                end
+            end
+            
+%            maxR = max(R(:));
+%            normalized_R = R / maxR;
+            
+            figure;
+            surf(R);
+            
+            title('3D Plot of ACF');
+            xlabel('Sample i');
+            ylabel('Sample j');
+            zlabel('Normalized ACF Value');
+            
+            grid on;
+            view(45, 30);
+
         end
     end
 
@@ -890,6 +916,23 @@ v = variance;
             app.PlotNnumberofsamplefunctionsLabel = uilabel(app.RandomProcessTab_2);
             app.PlotNnumberofsamplefunctionsLabel.Position = [147 154-100 240 29];
             app.PlotNnumberofsamplefunctionsLabel.Text = 'Plot N number of sample functions';
+
+            % Create TimeAutocorrelation3DPlotLabel
+            app.TimeAutocorrelation3DPlotLabel = uilabel(app.RandomProcessTab_2);
+            app.TimeAutocorrelation3DPlotLabel.Position = [476 106 237 29];
+            app.TimeAutocorrelation3DPlotLabel.Text = 'Time Autocorrelation 3D Plot';
+
+            % Create autoCorrelationButton_2
+            app.autoCorrelationButton_2 = uibutton(app.RandomProcessTab_2, 'push');
+            app.autoCorrelationButton_2.ButtonPushedFcn = createCallbackFcn(app, @autoCorrelationButton_2Pushed, true);
+            app.autoCorrelationButton_2.Position = [723 109 66 23];
+            app.autoCorrelationButton_2.Text = 'Load';
+
+            % Create AutoLabel_2
+            app.AutoLabel_2 = uilabel(app.RandomProcessTab_2);
+            app.AutoLabel_2.BackgroundColor = [0.902 0.902 0.902];
+            app.AutoLabel_2.Position = [476 66 313 29];
+            app.AutoLabel_2.Text = '';
 
             % Create ContextMenu
             app.ContextMenu = uicontextmenu(app.UIFigure);
