@@ -919,19 +919,19 @@ v = variance;
 
             % Create TimeAutocorrelation3DPlotLabel
             app.TimeAutocorrelation3DPlotLabel = uilabel(app.RandomProcessTab_2);
-            app.TimeAutocorrelation3DPlotLabel.Position = [147 18 240 29];
+            app.TimeAutocorrelation3DPlotLabel.Position = [147 154-100 237 29];
             app.TimeAutocorrelation3DPlotLabel.Text = 'Time Autocorrelation 3D Plot';
 
             % Create autoCorrelationButton_2
             app.autoCorrelationButton_2 = uibutton(app.RandomProcessTab_2, 'push');
             app.autoCorrelationButton_2.ButtonPushedFcn = createCallbackFcn(app, @autoCorrelationButton_2Pushed, true);
-            app.autoCorrelationButton_2.Position = [402 18 98 23];
+            app.autoCorrelationButton_2.Position = [723 109 66 23];
             app.autoCorrelationButton_2.Text = 'Load';
 
             % Create AutoLabel_2
             app.AutoLabel_2 = uilabel(app.RandomProcessTab_2);
             app.AutoLabel_2.BackgroundColor = [0.902 0.902 0.902];
-            app.AutoLabel_2.Position = [519 18 269 29];
+            app.AutoLabel_2.Position = [476 66 313 29];
             app.AutoLabel_2.Text = '';
 
             % Create ContextMenu
